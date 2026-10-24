@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DualMarket — Marketplace Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --secondary: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #16a34a;
+      --badge-gold: #f59e0b;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: #f1f5f9; color: var(--text-main); line-height: 1.5; padding-bottom: 40px; }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 12px 16px;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .logo-container { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .logo-badge {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-text { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+    .logo-text span { color: var(--primary-accent); }
+
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .btn-primary { background: var(--primary-accent); color: white; }
+    .btn-primary:active { background: var(--accent-hover); }
+    .btn-outline { background: #f8fafc; border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-outline:active { background: #e2e8f0; }
+
+    .container { max-width: 1200px; margin: 16px auto; padding: 0 16px; }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      padding: 24px 18px;
+      border-radius: 18px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .hero p { color: #94a3b8; font-size: 13px; margin-bottom: 16px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .card.boosted-card { border: 2px solid #f59e0b; }
+
+    .card-img-wrap {
+      position: relative;
+      height: 160px;
+      width: 100%;
+      background: #e2e8f0;
+    }
+
+    .card-img { width: 100%; height: 100%; object-fit: cover; }
+
+    .category-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .boosted-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #f59e0b;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .card-body { padding: 14px; }
+    .location-rating { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .card-title { font-size: 16px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .card-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; min-height: 36px; }
+
+    .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+    .price-val { font-size: 14px; font-weight: 800; color: var(--primary); }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+      z-index: 9999; display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+
+    .modal {
+      background: white; border-radius: 20px; width: 100%; max-width: 480px;
+      max-height: 85vh; overflow-y: auto; padding: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .modal-title { font-size: 17px; font-weight: 800; }
+    .close-modal { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px; outline: none; }
+
+    .admin-item {
+      background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px;
+    }
+
+    .admin-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .btn-approve { background: #16a34a; color: white; }
+    .btn-block { background: #dc2626; color: white; }
+    .btn-pin { background: #f59e0b; color: white; }
+  </style>
+</head>
+<body>
+
+  <!-- Header with Direct onclick Handlers -->
+  <header>
+    <div class="nav-container">
+      <a href="#" class="logo-container">
+        <div class="logo-badge">DM</div>
+        <div class="logo-text">Dual<span>Market</span></div>
+      </a>
+      <div class="header-actions">
+        <button class="btn btn-primary" type="button" onclick="openModal('postModal')">+ Post Product</button>
+        <button class="btn btn-outline" type="button" onclick="openModal('adminModal')">Admin Panel</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Dynamic Self-Service Marketplace</h1>
+      <p>Vendors list products directly. Auto-privacy links connect buyers straight to WhatsApp.</p>
+    </div>
+
+    <!-- Dynamic Listings -->
+    <div class="grid" id="listingsGrid">
+      <p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Loading live marketplace listings...</p>
+    </div>
+  </div>
+
+  <!-- Vendor Post Product Modal -->
+  <div class="modal-overlay" id="postModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">🏪 Post Your Product</h2>
+        <button class="close-modal" type="button" onclick="closeModal('postModal')">&times;</button>
+      </div>
+      <form id="vendorForm">
+        <div class="form-group">
+          <label>Your Email</label>
+          <input type="email" id="vendorEmail" class="form-control" placeholder="vendor@gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label>Business / Product Name</label>
+          <input type="text" id="postTitle" class="form-control" placeholder="e.g. Melipau Detergents" required>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="postCategory" class="form-control">
+            <option>Restaurants & Food</option>
+            <option>Clothing & Shoes</option>
+            <option>Solar & Electronics</option>
+            <option>Services & Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="postLocation" class="form-control" placeholder="e.g. Bulawayo CBD" required>
+        </div>
+        <div class="form-group">
+          <label>WhatsApp Contact</label>
+          <input type="text" id="postWhatsapp" class="form-control" placeholder="e.g. 0710476073" required>
+        </div>
+        <div class="form-group">
+          <label>Price / Price Range</label>
+          <input type="text" id="postPrice" class="form-control" placeholder="e.g. $5 - $20" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="postDesc" class="form-control" rows="3" placeholder="Describe your product..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 6px;">Submit For Review</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">🛡️ Admin Control Panel</h2>
+        <button class="close-modal" type="button" onclick="closeModal('adminModal')">&times;</button>
+      </div>
+
+      <div id="adminAuthBlock">
+        <div class="form-group">
+          <label>Enter Admin Passcode</label>
+          <input type="password" id="adminPasscode" class="form-control" placeholder="Enter admin code">
+        </div>
+        <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="checkAdminAuth()">Access Dashboard</button>
+      </div>
+
+      <div id="adminContent" style="display: none;">
+        <h3 style="font-size: 14px; margin-bottom: 10px;">Pending & Active Listings</h3>
+        <div id="adminListingsQueue">
+          <p style="color: var(--text-muted); font-size: 12px;">Loading submissions...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://byufsxfibjiczvmjcccm.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_SY5YfiZKo8v2__CIrlHhJQ_3It2Rx0C";
+    
+    let supabase = null;
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function loadListings() {
+      const grid = document.getElementById('listingsGrid');
+      if (!supabase) {
+        grid.innerHTML = '<p style="color:red; grid-column:1/-1; text-align:center;">Supabase SDK failed to load.</p>';
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('is_approved', true)
+        .order('is_boosted', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center;">No active listings yet. Be the first to post!</p>';
+        return;
+      }
+
+      grid.innerHTML = data.map(item => {
+        const cleanPhone = item.whatsapp_number.replace(/[^0-9]/g, '');
+        const waLink = `https://wa.me/${cleanPhone.startsWith('263') ? cleanPhone : '263' + cleanPhone.replace(/^0/, '')}?text=Hi%20${encodeURIComponent(item.title)},%20I%20saw%20your%20listing%20on%20DualMarket.`;
+        
+        return `
+          <div class="card ${item.is_boosted ? 'boosted-card' : ''}">
+            <div class="card-img-wrap">
+              <span class="category-tag">${item.category}</span>
+              ${item.is_boosted ? '<span class="boosted-badge">⚡ PINNED</span>' : ''}
+              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80" class="card-img" alt="${item.title}">
+            </div>
+            <div class="card-body">
+              <div class="location-rating">
+                <span>📍 ${item.location}</span>
+                <span style="color:#2563eb;">✔ Verified</span>
+              </div>
+              <h3 class="card-title">${item.title}</h3>
+              <p class="card-desc">${item.description}</p>
+              <div class="card-footer">
+                <div>
+                  <div style="font-size:9px; color:var(--text-muted);">PRICE</div>
+                  <div class="price-val">${item.price_info || 'Inquire'}</div>
+                </div>
+                <a href="${waLink}" target="_blank" class="btn" style="background:#25d366; color:white;">WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('vendorForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!supabase) return alert("Database not ready.");
+
+      const user_email = document.getElementById('vendorEmail').value;
+      const title = document.getElementById('postTitle').value;
+      const category = document.getElementById('postCategory').value;
+      const location = document.getElementById('postLocation').value;
+      const whatsapp_number = document.getElementById('postWhatsapp').value;
+      const price_info = document.getElementById('postPrice').value;
+      const description = document.getElementById('postDesc').value;
+
+      const { error } = await supabase.from('listings').insert([
+        { user_email, title, category, location, whatsapp_number, price_info, description, is_approved: false, is_boosted: false }
+      ]);
+
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("🎉 Success! Submitted for Admin approval.");
+        closeModal('postModal');
+        this.reset();
+      }
+    });
+
+    function checkAdminAuth() {
+      const code = document.getElementById('adminPasscode').value;
+      if (code === '263788') {
+        document.getElementById('adminAuthBlock').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        loadAdminQueue();
+      } else {
+        alert("Incorrect Admin Code!");
+      }
+    }
+
+    async function loadAdminQueue() {
+      const queue = document.getElementById('adminListingsQueue');
+      const { data, error } = await supabase.from('listings').select('*').order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        queue.innerHTML = '<p style="color:var(--text-muted);">No submissions found.</p>';
+        return;
+      }
+
+      queue.innerHTML = data.map(item => `
+        <div class="admin-item">
+          <strong>${item.title}</strong> (${item.category} - ${item.location})<br>
+          <small>Email: ${item.user_email} | WA: ${item.whatsapp_number}</small><br>
+          <small>Status: ${item.is_approved ? '✅ Approved' : '⏳ Pending'} | Boosted: ${item.is_boosted ? '🔥 Yes' : 'No'}</small>
+          <div class="admin-actions">
+            ${!item.is_approved ? `<button onclick="toggleApprove('${item.id}', true)" class="btn btn-approve">Approve</button>` : `<button onclick="toggleApprove('${item.id}', false)" class="btn btn-block">Unapprove</button>`}
+            <button onclick="toggleBoost('${item.id}', ${!item.is_boosted})" class="btn btn-pin">${item.is_boosted ? 'Unpin' : 'Pin / Boost'}</button>
+            <button onclick="deleteListing('${item.id}')" class="btn btn-block">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function toggleApprove(id, status) {
+      await supabase.from('listings').update({ is_approved: status }).eq('id', id);
+      loadAdminQueue();
+      loadListings();
+    }
+
+    async function toggleBoost(id, status) {
+      await supabase.from('listings').update({ is_boosted: status }).eq('id', id);
+      loadAdminQueue();
+      loadListings();
+    }
+
+    async function deleteListing(id) {
+      if (confirm("Delete this listing permanently?")) {
+        await supabase.from('listings').delete().eq('id', id);
+        loadAdminQueue();
+        loadListings();
+      }
+    }
+
+    if (supabase) { loadListings(); }
+  </script>
+</body>
+</html>
